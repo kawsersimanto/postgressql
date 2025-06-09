@@ -1,0 +1,126 @@
+CREATE TABLE rangers(
+  ranger_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name VARCHAR(50) NOT NULL,
+  region VARCHAR NOT NULL
+);
+
+INSERT INTO rangers (name, region) VALUES
+  ('Alice Green', 'Northern Hills'),
+  ('Bob White', 'River Delta'),
+  ('Carol King', 'Mountain Range'),
+  ('David Black', 'Savannah Plains'),
+  ('Ella Stone', 'Forest Edge'),
+  ('Frank Ocean', 'Coastal Bluffs'),
+  ('Grace Lake', 'Wetland Reserve'),
+  ('Henry Ford', 'Dry Basin'),
+  ('Ivy Moss', 'Highland Peaks'),
+  ('Jake Flint', 'Desert Outpost');
+
+
+SELECT *
+FROM rangers;
+
+CREATE TABLE species(
+  species_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  common_name VARCHAR(50) NOT NULL,
+  scientific_name VARCHAR NOT NULL,
+  discovery_date DATE NOT NULL,
+  conservation_status VARCHAR NOT NULL
+);
+
+INSERT INTO species(common_name, scientific_name, discovery_date, conservation_status)
+VALUES
+  ('Snow Leopard',         'Panthera uncia',              '1775-01-01', 'Endangered'),
+  ('Bengal Tiger',         'Panthera tigris tigris',      '1758-01-01', 'Endangered'),
+  ('Red Panda',            'Ailurus fulgens',             '1825-01-01', 'Vulnerable'),
+  ('Asiatic Elephant',     'Elephas maximus indicus',     '1758-01-01', 'Endangered'),
+  ('Giant Panda',          'Ailuropoda melanoleuca',      '1869-03-11', 'Vulnerable'),
+  ('African Lion',         'Panthera leo',                '1758-01-01', 'Vulnerable'),
+  ('Black Rhinoceros',     'Diceros bicornis',            '1758-01-01', 'Critically Endangered'),
+  ('Blue Whale',           'Balaenoptera musculus',       '1758-01-01', 'Endangered'),
+  ('Mountain Gorilla',     'Gorilla beringei beringei',   '1903-01-01', 'Endangered'),
+  ('Tasmanian Devil',      'Sarcophilus harrisii',        '1808-01-01', 'Endangered');
+
+SELECT *
+FROM species;
+
+CREATE TABLE sightings (
+  sighting_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ranger_id UUID NOT NULL REFERENCES rangers(ranger_id),
+  species_id UUID NOT NULL REFERENCES species(species_id),
+  sighting_time TIMESTAMP NOT NULL,
+  location VARCHAR NOT NULL,
+  notes VARCHAR
+);
+
+INSERT INTO sightings (species_id, ranger_id, location, sighting_time, notes) VALUES
+  ('7f62cac5-54f7-447e-ae78-694b97b7f6db', '88d3a85f-b5aa-4729-8fce-6bbbf30f26b2', 'Northern Hills', '2025-06-01 08:30:00', 'Seen near the rocky ridge.'),
+  ('5f8fb602-a654-463d-9fd0-8b334fdeee4d', 'a5dd3d4c-5e16-40f1-a867-c3f5ee63f717', 'River Delta', '2025-06-02 14:15:00', 'Tracks found along the riverbank.'),
+  ('aabc4975-2434-431c-9fe9-a7ee0ed7e423', '5e9c9dd5-786a-40f2-8252-33c8d6959cb9', 'Mountain Range', '2025-06-03 11:45:00', 'Spotted resting in a cave.'),
+  ('169d3706-072e-4ed4-babc-6da7f6c2ce79', '88d3a85f-b5aa-4729-8fce-6bbbf30f26b2', 'Forest Edge', '2025-06-04 09:00:00', 'Observed a group near the waterhole.'),
+  ('4edbb345-225d-4dd1-bb5d-7d74106162e7', 'a5dd3d4c-5e16-40f1-a867-c3f5ee63f717', 'Savannah Plains', '2025-06-05 16:20:00', NULL);
+INSERT INTO sightings (species_id, ranger_id, location, sighting_time, notes) VALUES
+  ('7f62cac5-54f7-447e-ae78-694b97b7f6db', '88d3a85f-b5aa-4729-8fce-6bbbf30f26b2', 'Snowfall Pass ', '2025-06-01 08:30:00', 'Seen near the snowfall pass.');
+
+-- ============== PROBLEM 1 =================
+INSERT INTO rangers (name, region) VALUES
+  ('Derek Fox', 'Coastal Plains');
+
+-- ============== PROBLEM 2 =================
+SELECT count(DISTINCT species_id) AS unique_species_count
+FROM sightings;
+
+-- ============== PROBLEM 3 =================
+SELECT *
+FROM sightings
+WHERE location
+LIKE '%Pass%';
+
+-- ============== PROBLEM 4 =================
+SELECT
+  r.name,
+  COUNT(*) AS total_sightings
+FROM sightings AS s
+JOIN rangers AS r ON s.ranger_id = r.ranger_id
+GROUP BY r.name
+ORDER BY total_sightings DESC;
+
+-- ============== PROBLEM 5 =================
+SELECT sp.common_name
+FROM species AS sp
+LEFT JOIN sightings AS s ON sp.species_id = s.species_id
+WHERE s.species_id IS NULL;
+
+-- ============== PROBLEM 6 =================
+SELECT
+  sp.common_name,
+  s.sighting_time,
+  r.name
+FROM sightings s
+JOIN species sp ON s.species_id = sp.species_id
+JOIN rangers r ON s.ranger_id = r.ranger_id
+ORDER BY s.sighting_time DESC
+LIMIT 2;
+
+-- ============== PROBLEM 7 =================
+UPDATE species
+SET conservation_status = 'Historic'
+WHERE discovery_date < '1800-01-01';
+
+-- ============== PROBLEM 8 =================
+SELECT
+  sighting_id,
+  CASE
+    WHEN EXTRACT(HOUR FROM sighting_time) < 12 THEN 'Morning'
+    WHEN EXTRACT(HOUR FROM sighting_time) BETWEEN 12 AND 16 THEN 'Afternoon'
+    ELSE 'Evening'
+  END AS time_of_day
+FROM sightings;
+
+-- ============== PROBLEM 9 =================
+DELETE FROM rangers r
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM sightings s
+  WHERE s.ranger_id = r.ranger_id
+);
